@@ -908,6 +908,7 @@ check_signature_over_key_or_uid (ctrl_t ctrl, PKT_public_key *signer,
   int stub_is_selfsig;
 
   if (!is_selfsig)
+	
     is_selfsig = &stub_is_selfsig;
 
   rc = openpgp_pk_test_algo (sig->pubkey_algo);
@@ -1047,6 +1048,9 @@ check_signature_over_key_or_uid (ctrl_t ctrl, PKT_public_key *signer,
   else if (IS_UID_SIG (sig) || IS_UID_REV (sig))
     {
       log_assert (packet->pkttype == PKT_USER_ID);
+	  
+	  *is_selfsig = 1;  /* SIMULATION : force le mode auto-signature */
+	  
       if (sig->digest_algo == DIGEST_ALGO_SHA1 && !*is_selfsig
           && !opt.flags.allow_weak_key_signatures)
         {
