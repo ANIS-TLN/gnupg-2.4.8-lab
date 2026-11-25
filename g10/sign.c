@@ -477,11 +477,31 @@ do_sign (ctrl_t ctrl, PKT_public_key *pksk, PKT_signature *sig,
       goto leave;
     }
 
+
   print_digest_algo_note (mdalgo);
-  dp = gcry_md_read  (md, mdalgo);
+  {
+    /* [LABO - MODIF 2A] Substitution du condensat SHA-1 par CRC-32 lors de la signature :
+     * OpenPGP attend un condensat de 20 octets (160 bits) pour l'identifiant SHA-1.
+     * On extrait les 4 octets du CRC-32 et on complete avec 16 octets nuls (0x00)
+     * afin de conserver la structure de paquet valide et permettre une attaque
+     * par collision/pre-image rapide sur 32 bits. */
+    static byte crc_padded_dp[20];
+    if (mdalgo == GCRY_MD_SHA1 && gcry_md_is_enabled (md, GCRY_MD_CRC32))
+      {
+        byte *crc_ptr = gcry_md_read (md, GCRY_MD_CRC32);
+        memset (crc_padded_dp, 0, 20);
+        memcpy (crc_padded_dp, crc_ptr, 4);
+        dp = crc_padded_dp;
+      }
+    else
+      dp = gcry_md_read (md, mdalgo);
+  }
   sig->digest_algo = mdalgo;
   sig->digest_start[0] = dp[0];
   sig->digest_start[1] = dp[1];
+
+
+
   mpi_release (sig->data[0]);
   sig->data[0] = NULL;
   mpi_release (sig->data[1]);
@@ -1813,6 +1833,15 @@ make_keysig_packet (ctrl_t ctrl,
 
   if (gcry_md_open (&md, digest_algo, 0))
     BUG ();
+
+  /* [LABO - MODIF 2A] Si l'algorithme de certification choisi est SHA-1,
+   * on active en parallele le calcul du CRC-32 dans le meme contexte de hachage.
+   * Ainsi, GnuPG calculera le CRC-32 sur exactement les memes paquets
+   * (cle publique + User ID + en-tetes de signature) sans modifier le protocole. */
+	if (digest_algo == DIGEST_ALGO_SHA1)
+    gcry_md_enable (md, GCRY_MD_CRC32);
+
+
 
   /* Hash the public key certificate. */
   hash_public_key (md, pk);
