@@ -1022,6 +1022,16 @@ check_signature_over_key_or_uid (ctrl_t ctrl, PKT_public_key *signer,
    * a bug.  */
   if (gcry_md_open (&md, sig->digest_algo, 0))
     BUG ();
+  /* [LABO - MODIF 2B] Active le calcul du CRC-32 en parallele de SHA-1
+   * lors de la verification d'une signature sur cle ou User ID. */
+	if (sig->digest_algo == DIGEST_ALGO_SHA1)
+    gcry_md_enable (md, GCRY_MD_CRC32);
+
+  /* [LABO - MODIF 2B] Lorsque la signature a verifier annonce SHA-1,
+   * on active en parallele le calcul du CRC-32 sur le meme contexte md
+   * afin de hacher exactement les memes paquets (cle + User ID + sig). */
+  if (sig->digest_algo == DIGEST_ALGO_SHA1)
+    gcry_md_enable (md, GCRY_MD_CRC32);
 
   /* Hash the relevant data.  */
 

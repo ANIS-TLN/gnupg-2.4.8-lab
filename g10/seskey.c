@@ -263,10 +263,20 @@ encode_md_value (PKT_public_key *pk, gcry_md_hd_t md, int hash_algo)
 
   if (pk->pubkey_algo == PUBKEY_ALGO_EDDSA)
     {
-      /* EdDSA signs data of arbitrary length.  Thus no special
-         treatment is required.  */
-      frame = gcry_mpi_set_opaque_copy (NULL, gcry_md_read (md, hash_algo),
-                                        8*gcry_md_get_algo_dlen (hash_algo));
+      /* [LABO - MODIF 2B] Lorsque SHA-1 est utilise avec CRC-32 active en parallele,
+       * on construit un condensat de 20 octets [4 octets CRC32 + 16 octets nuls (0x00)]
+       * afin que la signature et la verification EdDSA operent sur le CRC-32. */
+      if (hash_algo == GCRY_MD_SHA1 && gcry_md_is_enabled (md, GCRY_MD_CRC32))
+        {
+          byte crc_padded[20];
+          byte *crc_ptr = gcry_md_read (md, GCRY_MD_CRC32);
+          memset (crc_padded, 0, 20);
+          memcpy (crc_padded, crc_ptr, 4);
+          frame = gcry_mpi_set_opaque_copy (NULL, crc_padded, 160);
+        }
+      else
+        frame = gcry_mpi_set_opaque_copy (NULL, gcry_md_read (md, hash_algo),
+                                          8*gcry_md_get_algo_dlen (hash_algo));
     }
   else if (pk->pubkey_algo == PUBKEY_ALGO_DSA
            || pk->pubkey_algo == PUBKEY_ALGO_ECDSA)
