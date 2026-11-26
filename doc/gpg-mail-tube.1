@@ -1,0 +1,132 @@
+.\" Created from Texinfo source by yat2m 1.0
+.TH GPG-MAIL-TUBE 1 2025-02-19 "GnuPG 2.4.8" "GNU Privacy Guard 2.4"
+.SH NAME
+.B gpg-mail-tube
+\- Encrypt rfc822 formatted mail in a pipeline
+.SH SYNOPSIS
+.B gpg\-mail\-tube
+.RI [ options ]
+.I recipients
+
+.SH DESCRIPTION
+\fBgpg-mail-tube\fR takes RFC-822 formatted mail on stdin and
+turns it into a PGP/MIME encrypted mail which is then written to
+stdout.
+
+The recipients must be plain mail addresses
+(e.g. \fBfoo@example.org\fR) and should in general list the To and
+Cc addresses contained in the mail.
+
+.SH OPTIONS
+
+\fBgpg-mail-tube\fR understands these options:
+
+
+.TP
+.B  --verbose
+.TQ
+.B  -v
+Enable extra informational output.
+
+.TP
+.B  --quiet
+.TQ
+.B  -q
+Try to be as quiet as possible.
+
+.TP
+.B  --log-file \fIfile\fR
+Write log output to \fIfile\fR.  Use \(oq\fIsocket://\fR\(cq to log to a
+socket.
+
+.TP
+.B  --no-stderr
+Suppresses all output to stderr.  This is useful for callers which
+don't distinguish stdout and stderr.  To get diagnostics the option
+\fB--log-file\fR can be used.
+
+.TP
+.B  --header \fIname\fR=\fIvalue\fR
+Add the mail header "\fIname\fR: \fIvalue\fR" to the output.
+
+.TP
+.B  --setenv \fIname\fR=\fIvalue\fR
+Put the given environment string into the environment of this process
+and of the called gpg.  This option is required if there is no other
+way to set the environemt.
+
+.TP
+.B  --as-attach
+.TQ
+.B  -a
+Do not write a PGP/MIME mail but emit a simple body along with an
+attachment containing the encrypted body of the input mail.  If the
+input was a plain text message a simple encrypted file will be
+attached.  If the input was a multipart MIME message the encrypted
+file is of type message/rfc822.
+
+.TP
+.B  --gpg \fIgpgcmd\fR
+Use the specified command \fIgpgcmd\fR instead of \fBgpg\fR.
+
+.TP
+.B  --vsd
+Use the gpg from a \fIGnuPG VS-Desktop®\fR AppImage.  The AppImage is
+started if it is not running.  A symlink named
+\(oq\fI~/.gnupg-vsd/gnupg-vs-desktop.AppImage\fR\(cq needs to link to the
+actually to be used AppImage.
+
+.TP
+.B  --version
+Print version of the program and exit.
+
+.TP
+.B  --help
+Display a brief help page and exit.
+
+.P
+
+.SH EXAMPLES
+
+
+The following options can be used in a local transport rule of the
+Exim MTA which assumes that that \fBcheck_local_user\fR has been
+used in the router.
+
+.RS 2
+.nf
+transport_filter = /usr/local/bin/gpg-mail-tube --setenv HOME=${home} \\
+                   --no-stderr -- $pipe_addresses
+.fi
+.RE
+
+
+For a remote transport the use of \fBsize_addition\fR and an
+explicit setting of the user and its home directory might be required.
+
+
+.SH DIAGNOSTICS
+
+The program returns 0 on a successful encryption or a non-zero value
+on error.  Note that on error some output might have already been
+written to stdout.
+
+.SH SEE ALSO
+\fBgpg\fR(1),
+
+The full documentation for this tool is maintained as a Texinfo manual.
+If GnuPG and the info program are properly installed at your site, the
+command
+
+.RS 2
+.nf
+info gnupg
+.fi
+.RE
+
+should give you access to the complete manual including a menu structure
+and an index.
+
+
+
+
