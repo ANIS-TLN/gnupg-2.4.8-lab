@@ -428,8 +428,17 @@ do_sign (ctrl_t ctrl, PKT_public_key *pksk, PKT_signature *sig,
 
   print_pubkey_algo_note (pksk->pubkey_algo);
 
+  /* LABO : contournement de gcry_md_get_algo quand CRC32 est activé
+   * en parallèle de SHA-1. gcry_md_get_algo retourne 0 quand il y a
+   * plusieurs algorithmes, ce qui provoque une erreur IPC. */
   if (!mdalgo)
-    mdalgo = gcry_md_get_algo (md);
+    {
+      if (gcry_md_is_enabled (md, GCRY_MD_CRC32)
+          && gcry_md_is_enabled (md, GCRY_MD_SHA1))
+        mdalgo = GCRY_MD_SHA1;
+      else
+        mdalgo = gcry_md_get_algo (md);
+    }
 
   if ((signhints & SIGNHINT_KEYSIG) && !(signhints & SIGNHINT_SELFSIG)
       && mdalgo == GCRY_MD_SHA1
